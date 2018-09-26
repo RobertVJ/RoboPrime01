@@ -1,0 +1,130 @@
+
+import robocode.BulletHitEvent;
+import robocode.BulletMissedEvent;
+import robocode.HitByBulletEvent;
+import robocode.HitRobotEvent;
+import robocode.HitWallEvent;
+import robocode.Robot;
+import robocode.ScannedRobotEvent;
+import java.awt.Color;
+import java.lang.Math;
+public class RoboPrime_Hybrid2 extends Robot {
+	public Estado estado;
+	public long tiempoHuida;
+	public int potencia;
+	public double grados = (Math.random() * 90) + 1;
+	public double numeros = (Math.random() * 100) + 1;
+	public int direccion = 1;
+	public double Energia;
+	public int modo;
+	@Override
+	public void run() {
+		setBodyColor(Color.red);
+		setGunColor(Color.blue);
+		setRadarColor(Color.black);
+		estado = Estado.GIRANDO2;
+		potencia = 1;
+		while (true) {
+			Energia = getEnergy();
+			if (Energia > 50) {
+				modo = 1;
+			} else {
+				modo = 2;
+			}
+		switch (estado) {
+		case GIRANDO:
+			turnRight(10);
+			break;
+		case GIRANDO2:
+			turnRight(10 * direccion);
+			break;
+		case DISPARANDO:
+			fire(potencia);
+			break;
+		case DISPARANDO2:
+			fire(potencia);
+			ahead(100);
+			break;
+		case HUYENDO:
+			if (numeros > 40) {
+				ahead(numeros);
+			} else {
+				back(numeros);
+			}
+			if (grados > 45) {
+				turnLeft(grados);
+			} else {
+				turnRight(grados);
+			}
+			if (System.currentTimeMillis() - tiempoHuida >= 1000) {
+				estado = Estado.GIRANDO;
+			}
+			break;
+		case TORRETA:
+			turnGunRight(10);
+			break;
+		}
+	}
+	}
+	@Override
+	public void onScannedRobot(ScannedRobotEvent event) {
+		if (modo ==1) {
+			if (event.getBearing() >= 0) {
+				direccion = 1;
+			} else {
+				direccion = -1;
+			}
+			estado = Estado.DISPARANDO2;
+		} else {
+			estado = Estado.DISPARANDO;
+		}
+	}
+
+	@Override
+	public void onBulletMissed(BulletMissedEvent event) {
+		if (modo==1) {
+			estado = Estado.GIRANDO2;
+		} else {
+			estado = Estado.TORRETA;
+		}
+		if (potencia > 1) {
+			potencia--;
+		}
+	}
+	@Override
+	public void onBulletHit(BulletHitEvent event) {
+		if (potencia < 3) {
+			potencia++;
+		}
+	}
+	@Override
+	public void onHitByBullet(HitByBulletEvent event) {
+		if (modo==1) {
+			doNothing();
+		} else {
+			estado = Estado.DISPARANDO;
+			estado = Estado.HUYENDO;
+			tiempoHuida = System.currentTimeMillis();
+		}
+	}
+	@Override
+	public void onHitWall(HitWallEvent event) {
+		if (estado != Estado.HUYENDO)
+			turnRight(90);
+		estado = Estado.GIRANDO;
+	}
+	@Override
+	public void onHitRobot(HitRobotEvent event) {
+		if (modo==1) {
+			estado = Estado.DISPARANDO2;
+		} else {
+			estado = Estado.TORRETA;
+			estado = Estado.DISPARANDO;
+			estado = Estado.HUYENDO;
+			tiempoHuida = System.currentTimeMillis();
+		}
+	}
+	enum Estado {
+		GIRANDO, DISPARANDO, HUYENDO, TORRETA, GIRANDO2, DISPARANDO2
+	}
+}
