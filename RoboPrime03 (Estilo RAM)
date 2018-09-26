@@ -1,0 +1,63 @@
+import java.awt.Color;
+import robocode.BulletHitEvent;
+import robocode.BulletMissedEvent;
+import robocode.HitRobotEvent;
+import robocode.HitWallEvent;
+import robocode.Robot;
+import robocode.ScannedRobotEvent;
+public class RoboPrime_Ram extends Robot {
+	public int dirección=1;
+	public Estado estado;
+	public int x;	
+	@Override
+	public void run() {
+		setBodyColor(Color.red);
+		setGunColor(Color.blue);
+		setRadarColor(Color.black);
+		estado = Estado.GIRANDO;
+		x = 1;
+		 while(true)
+			 switch (estado) {
+			 case GIRANDO:
+				 turnRight(10 * dirección);
+				 break;
+			 case DISPARANDO:
+				 fire(x);
+				 ahead(100);
+				 break;	 
+		}
+	}
+@Override
+public void onScannedRobot(ScannedRobotEvent event) {
+	if (event.getBearing() >= 0) {
+		dirección = 1;
+	} else {
+		dirección = -1;
+	}
+	estado = Estado.DISPARANDO;
+}
+public void onBulletMissed(BulletMissedEvent event) {
+	if (estado==Estado.DISPARANDO)
+		estado = Estado.GIRANDO;
+	if (x>1) {
+		x--;
+	}
+}
+public void onBulletHit(BulletHitEvent event) {
+	if (x<3) {
+		x++;
+	}		
+}
+@Override
+public void onHitRobot(HitRobotEvent event) {
+	estado = Estado.DISPARANDO;	
+}
+public void onHitWall(HitWallEvent event) {
+		turnRight(90);
+		estado = Estado.GIRANDO;
+}
+enum Estado {
+	GIRANDO , 
+	DISPARANDO 
+}
+}
