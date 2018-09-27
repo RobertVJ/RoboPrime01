@@ -1,0 +1,140 @@
+import java.awt.Color;
+import robocode.BulletHitEvent;
+import robocode.BulletMissedEvent;
+import robocode.HitRobotEvent;
+import robocode.HitWallEvent;
+import robocode.Robot;
+import robocode.ScannedRobotEvent;
+public class RoboPrimeCharlie04 extends Robot {
+	public double movimientoTotal; //Variable de movimineto dependiendo el campo de batalla.
+	public Estado estado;		  //Sistema de control de los estados
+	public int modo;			 //Contador con el que se diferencia la estrategia RAM y Walls
+	public int potencia;		//Potencia de disparo
+	public int direccion = 1;  // Direccion del robot.
+	public double Energia;	  //Variable de energia.
+	public int bandera;		 //Contador que da inicio a las estrategias dependiendo de la energia.
+	//Inicio del robot dandole color al mismo , la declaracion de variables, estados 
+	// e inicia  la estategias dependiendo de la energia.
+	@Override
+	public void run() {
+		movimientoTotal = Math.max(getBattleFieldWidth(), getBattleFieldHeight());
+		potencia = 1;
+		estado = Estado.Girando2;
+		modo = 1;
+		bandera = 0;
+		while (true) {
+			Energia = getEnergy();
+			if (Energia > 50) {
+				modo = 1;
+				bandera = 0;
+				setBodyColor(Color.red);
+				setGunColor(Color.black);
+				setRadarColor(Color.black);
+				setBulletColor(Color.red);
+				setScanColor(Color.red);
+			} else {
+				modo = 2;
+				if (bandera==0) {
+					turnLeft(getHeading() % 90);
+					ahead(movimientoTotal);
+					turnGunRight(90);
+					bandera = 1;
+				}
+				setBodyColor(Color.yellow);
+				setGunColor(Color.yellow);
+				setRadarColor(Color.black);
+				setBulletColor(Color.yellow);
+				setScanColor(Color.yellow);
+			}
+			switch (estado) {
+			case obstaculo:
+				turnRight(90);
+				ahead(movimientoTotal);
+				scan();
+				break;
+			case pared:
+				turnLeft(getHeading() % 90);
+				ahead(movimientoTotal);
+				turnGunRight(90);
+				break;
+			case Girando2:
+				turnRight(10 * direccion);
+				break;
+			case Disparando2:
+				scan();
+				fire(potencia);
+				ahead(350);
+				break;
+			}
+		}
+	}
+	//Acciones que debe seguir el robot cuando choca contra una una pared de l campo de batalla.
+	//En modo 1 gira a la derecha y entra en estado GIRANDO2.en el modo 2 entra a estado obstaculo.
+	@Override
+	public void onHitWall(HitWallEvent event) {
+		if (modo == 1) {
+			turnRight(90);
+			estado = Estado.Girando2;
+		} else {
+			estado = Estado.obstaculo;
+		}
+	}
+	//Acciones que debe seguir el robotcuando choca contra un robot enemigo.
+	//Modo 1 entra a estado DISPARANDO2.El modo 2 genera un accion dependindo al angulo de distancia con una pared,
+	//si es mayor avanza 100 posiciones de lo contrario se regresa 100 posciones.
+	@Override
+	public void onHitRobot(HitRobotEvent event) {
+		if (modo == 1) {
+			estado = Estado.Disparando2;
+		} else {
+				if (event.getBearing() > -90 && event.getBearing() < 90) {
+					back(100);
+			} 	else {
+					ahead(100);
+			}
+		}
+	}
+	//Acciones que debe que seguir el  robot cuando ve  a un robot.
+	//En modo 1 fija el robot enemigo y dispara.En modo 2 dispara en potencia 2.
+	@Override
+	public void onScannedRobot(ScannedRobotEvent event) {
+		if (modo == 1) {
+				if (event.getBearing() >= 0) {
+					direccion = 1;
+			} 	else {
+					direccion = -1;
+			}
+			estado = Estado.Disparando2;
+	} else {
+			fire(2);
+		}
+	}
+	//Acciones que debe que seguir el  robot cuando falla un disparo.
+	//En modo 1 decrementa la potencia del disparo.En modo 2 entra a estado Obstaculo.
+	public void onBulletMissed(BulletMissedEvent event) {
+		if (modo == 1) {
+				estado = Estado.Girando2;
+			if (potencia > 1) {
+				potencia--;
+			}
+	} else {
+		estado = Estado.obstaculo;
+		}
+	}
+	// Acciones que debe seguir el robot cuando acierta un disparo.
+	//Incrementa la potencia del disparo.
+	public void onBulletHit(BulletHitEvent event) {
+		if (modo == 1) {
+				if (potencia < 3) {
+					potencia++;
+			}
+	}   else {
+			doNothing();
+		}
+	}
+	// Acciones que debe seguir el robot cuando acierta un disparo.
+	//Incrementa la potencia del disparo.
+	enum Estado {
+		obstaculo, pared, Girando2, Disparando2
+	}
+}
