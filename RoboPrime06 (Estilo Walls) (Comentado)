@@ -1,0 +1,58 @@
+import java.awt.Color;
+
+import robocode.HitRobotEvent;
+import robocode.HitWallEvent;
+import robocode.Robot;
+import robocode.ScannedRobotEvent;
+public class RoboPrime_Walls extends Robot {
+	public double movimientoTotal; // variable de movimiento, dependiendo el campo de batalla
+	public Estado estado;		  //Sistema de control de los estados
+	//Inicio del robot dandole color al mismo y la declaracion de variables y estados.
+	@Override
+	public void run() {
+		movimientoTotal = Math.max(getBattleFieldWidth(), getBattleFieldHeight());
+		estado = Estado.pared;
+		while (true) {
+			setBodyColor(Color.black);
+			setGunColor(Color.black);
+			setRadarColor(Color.yellow);
+			setBulletColor(Color.yellow);
+			setScanColor(Color.yellow);
+			switch (estado) {
+			case obstaculo:
+				turnRight(90);
+				ahead(movimientoTotal);
+				scan();
+				break;
+			case pared:
+				turnLeft(getHeading() % 90);
+				ahead(movimientoTotal);
+				turnGunRight(90);
+				break;
+			}
+		}
+	}
+	//Acciones que debe seguir el robot cuando choca contra una pared del campo de la batalla.Entra a estado Obstaculo.
+	@Override
+	public void onHitWall(HitWallEvent event) {
+		estado = Estado.obstaculo;
+	}
+	//Acciones que debe seguir el robot cuando choca contra un robot enemigo..
+	@Override
+	public void onHitRobot(HitRobotEvent event) {
+		if (event.getBearing() > -90 && event.getBearing() < 90) {
+			back(100);
+		} else {
+			ahead(100);
+		}
+	}
+	//Acciones que debe que seguir el robot cuando ve aun robot enemigo.Dispara al robot enemigo.
+	@Override
+	public void onScannedRobot(ScannedRobotEvent event) {
+		fire(2);
+	}
+	//Lista de estados que utiliza el robot.
+	enum Estado {
+		obstaculo, pared
+	}
+}
