@@ -1,0 +1,75 @@
+import java.awt.Color;
+import robocode.BulletHitEvent;
+import robocode.BulletMissedEvent;
+import robocode.HitRobotEvent;
+import robocode.HitWallEvent;
+import robocode.Robot;
+import robocode.ScannedRobotEvent;
+public class RoboPrime_RAM extends Robot {
+	public int direccion=1; // Direccion del robot
+	public Estado estado; // Sistema de control de los estados
+	public int potencia; // Potencia de disparo
+	//Inicio del robot dandole color al mismo y la declaracion de variables y estados.
+	@Override
+	public void run() {
+		setBodyColor(Color.red);
+		setGunColor(Color.blue);
+		setRadarColor(Color.black);
+		estado = Estado.GIRANDO2;
+		potencia = 1;
+		 while(true)
+			 switch (estado) {
+			 case GIRANDO2: // accion de girar el robot.
+				 turnRight(10 * direccion);
+				 break;
+			 case DISPARANDO2: //accion de disparar el cañon del robot.
+				 scan();
+				 fire(potencia);
+				 ahead(350);
+				 break;	 
+		}
+	}
+//Acciones que debe que seguir el  robot cuando ve  a un robot.Fija el robot enemigo y dispara.
+@Override
+public void onScannedRobot(ScannedRobotEvent event) {
+	getHeading();
+	if (event.getBearing() >= 0) {
+		direccion = 1;
+	} else {
+		direccion = -1;
+	}
+	estado = Estado.DISPARANDO2;
+}
+//Acciones que debe que seguir el  robot cuando falla un disparo.Decrementa la potenica del disparo.
+public void onBulletMissed(BulletMissedEvent event) {
+	if (estado==Estado.DISPARANDO2)
+		estado = Estado.GIRANDO2;
+	if (potencia>1) {
+		potencia--;
+	}
+}
+// Acciones que debe seguir el robot cuando acierta un disparo.Incrementa la potencia del disparo.
+public void onBulletHit(BulletHitEvent event) {
+	if (potencia<3) {
+		potencia++;
+	}		
+}
+//Acciones que debe seguir el robot cuando choca contra un robot enemigo.Escanea al robot enemigo, lo centra con el cañon y dispara.
+@Override
+public void onHitRobot(HitRobotEvent event) {
+	scan();
+	getName();
+	getHeading();
+	estado = Estado.DISPARANDO2;
+}
+//Acciones que debe seguir el robot cuando choca contra una pared del campo de la batalla.Gira 90 grados ala derecha y entra a estado GIRANDO2.
+public void onHitWall(HitWallEvent event) {
+		turnRight(90);
+		estado = Estado.GIRANDO2;
+}
+//Lista de estados que utiliza el robot.
+enum Estado {
+	GIRANDO2 , 
+	DISPARANDO2 
+}
+}
